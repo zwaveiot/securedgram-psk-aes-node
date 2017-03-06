@@ -1,0 +1,23 @@
+{
+  "name": "securedgram-psk-aes",
+  "version": "1.0.0",
+  "description": "A partial DTLS 1.0 implementation for Node.js",
+  "main": "./DtlsSocket.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zwaveiot/securedgram-psk-aes-node.git"
+  },
+  "keywords": [
+    "securedgram",
+    "dtls"
+  ],
+  "author": "zwaveiot",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/zwaveiot/securedgram-psk-aes-node/issues"
+  },
+  "homepage": "https://github.com/zwaveiot/securedgram-psk-aes-node#readme"
+}
