@@ -24,7 +24,7 @@ exports.DtlsVersion = Object.freeze({
     }
 }); 
 exports.isDtlsVersionValid = function(dtlsVersion) {
-    return (this.DtlsVersion.properties[dtlsVersion] !== undefined);
+    return (typeof this.DtlsVersion.properties[dtlsVersion] !== "undefined");
 }
 
 exports.CipherSuite = Object.freeze({
@@ -39,106 +39,10 @@ exports.CipherSuite = Object.freeze({
 });
 exports.isCipherSuiteValid = function(cipherSuite) {
     // NOTE: we do not reject the null cipher suite here
-    return (this.CipherSuite.properties[cipherSuite] !== undefined);
+    return (typeof this.CipherSuite.properties[cipherSuite] !== "undefined");
 }
 exports.isCipherSuiteNull = function() {
     return (this.CipherSuite === CipherSuite.TLS_NULL_WITH_NULL_NULL);
-}
-
-// NOTE: the number values assigned to KeyExchangeAlgorithm members are for our own use, not from any specification
-exports.KeyExchangeAlgorithm = Object.freeze({
-    NULL: 0x00,
-    PSK: 0x01,
-    properties:
-    {
-        0x00: {name: "NULL"},
-        0x01: {name: "PSK"},
-    }
-});
-exports.isKeyExchangeAlgorithmValid = function(keyExchangeAlgorithm) {
-    // NOTE: we do not reject the null key exchange algorithm here
-    return (this.KeyExchangeAlgorithm.properties[keyExchangeAlgorithm] !== undefined);
-}
-
-// NOTE: the number values assigned to BulkEncryptionAlgorithm members are for our own use, not from any specification
-exports.BulkEncryptionAlgorithm = Object.freeze({
-    NULL: 0x00,
-    AES_128_CBC: 0x01,
-    AES_256_CBC: 0x02,
-    properties:
-    {
-        0x00: {name: "NULL"},
-        0x01: {name: "AES_128_CBC"},
-        0x02: {name: "AES_256_CBC"},
-    }
-});
-exports.isBulkEncryptionAlgorithmValid = function(bulkEncryptionAlgorithm) {
-    // NOTE: we do not reject the null bulk encryption algorithm here
-    return (this.BulkEncryptionAlgorithm.properties[bulkEncryptionAlgorithm] !== undefined);
-}
-exports.getBulkAlgorithmKeySize = function(bulkEncryptionAlgorithm) {
-    switch (bulkEncryptionAlgorithm) {
-        case this.BulkEncryptionAlgorithm.AES_128_CBC:
-            return 16;
-        case this.BulkEncryptionAlgorithm.AES_256_CBC:
-            return 32;
-        case this.BulkEncryptionAlgorithm.NULL:
-            return 0;
-        default:
-            // invalid BulkEncryptionAlgorithm
-            return null;
-    }
-}
-exports.getBulkAlgorithmBlockSize = function(bulkEncryptionAlgorithm) {
-    switch (bulkEncryptionAlgorithm) {
-        case this.BulkEncryptionAlgorithm.AES_128_CBC:
-        case this.BulkEncryptionAlgorithm.AES_256_CBC:
-            return 16;
-        case this.BulkEncryptionAlgorithm.NULL:
-            return 1;
-        default:
-            // invalid BulkEncryptionAlgorithm
-            return null;
-    }
-}
-exports.getBulkAlgorithmAsString = function(bulkEncryptionAlgorithm) {
-    switch (bulkEncryptionAlgorithm) {
-        case this.BulkEncryptionAlgorithm.AES_128_CBC:
-            return "aes-128-cbc";
-        case this.BulkEncryptionAlgorithm.AES_256_CBC:
-            return "aes-256-cbc";
-        case this.BulkEncryptionAlgorithm.NULL:
-            return "null";
-        default:
-            // invalid BulkEncryptionAlgorithm
-            return null;
-    }
-}
-
-// NOTE: the number values assigned to MacAlgorithm members are for our own use, not from any specification
-exports.MacAlgorithm = Object.freeze({
-    NULL: 0x00,
-    SHA1: 0x01,
-    properties:
-    {
-        0x00: {name: "NULL"},
-        0x01: {name: "SHA1"},
-    }
-});
-exports.isMacAlgorithmValid = function(macAlgorithm) {
-    // NOTE: we do not reject the null mac algorithm here
-    return (this.MacAlgorithm.properties[macAlgorithm] !== undefined);
-}
-exports.getMacAlgorithmHashSize = function(macAlgorithm) {
-    switch (macAlgorithm) {
-        case this.MacAlgorithm.SHA1:
-            return 20;
-        case this.MacAlgorithm.NULL:
-            return 0;
-        default:
-            // invalid MacAlgorithm
-            return null;
-    }
 }
 
 exports.CompressionMethod = Object.freeze({
@@ -149,20 +53,8 @@ exports.CompressionMethod = Object.freeze({
     }
 }); 
 exports.isCompressionMethodValid = function(compressionMethod) {
-    return (this.CompressionMethod.properties[compressionMethod] !== undefined);
+    return (typeof this.CompressionMethod.properties[compressionMethod] !== "undefined");
 }
-
-exports.SessionState = Object.freeze({
-    NotConnected: 0,
-    ClientHelloSent: 1,
-    FinishedSent: 2,
-    properties:
-    {
-        0: {name: "NotConnected"},
-        1: {name: "ClientHelloSent"},
-        2: {name: "FinishedSent"},
-    }
-});
 
 
 
@@ -170,31 +62,15 @@ exports.SessionState = Object.freeze({
 
 const MAX_DTLS_10_COOKIE_LENGTH = 32; // DTLS 1.0
 
-exports.ProtocolType = Object.freeze({
-    DtlsChangeCipherSpecProtocol: 0x14,
-    DtlsAlertProtocol: 0x15,
-    DtlsHandshakeProtocol: 0x16,
-    DtlsApplicationDataProtocol: 0x17,
-    properties: {
-        0x14: {name: "DtlsChangeCipherSpecProtocol"},
-        0x15: {name: "DtlsAlertProtocol"},
-        0x16: {name: "DtlsHandshakeProtocol"},
-        0x17: {name: "DtlsApplicationDataProtocol"}
-    }
-});
-exports.isProtocolTypeValid = function(protocolType) {
-    return (this.ProtocolType.properties[protocolType] !== undefined);
-}
-
 exports.getMaximumCookieLength = function(version) {
-    if (!this.isVersionValid(version)) {
+    if (!this.isDtlsVersionValid(version)) {
         throw new RangeError();
     }
     switch (version) {
-        case this.VersionOption.DTLS_1_0:
+        case this.DtlsVersion.DTLS_1_0:
             return MAX_DTLS_10_COOKIE_LENGTH;
         default:
-            // NOTE: this should never be reached, as the isVersionValid(...) call should have eliminated any unknown versions
+            // NOTE: this should never be reached, as the isDtlsVersionValid(...) call should have eliminated any unknown versions
             throw new RangeError();
     }    
 }
@@ -209,31 +85,41 @@ exports.ChangeCipherSpecType = Object.freeze({
     }
 });
 exports.isChangeCipherSpecTypeValid = function(type) {
-    return (this.ChangeCipherSpecType.properties[type] !== undefined);
+    return (typeof this.ChangeCipherSpecType.properties[type] !== "undefined");
 }
 
 
 
-/* DtlsHandshakeRecord enums */
+/* DtlsHandshakeMessage enums */
 
 exports.MessageType = Object.freeze({
+    // HelloRequest: 0x00,
     ClientHello: 0x01,
     ServerHello: 0x02,
     HelloVerifyRequest: 0x03,
+    // Certificate: 0x0b,
+    // ServerKeyExchange: 0x0c,
+    // CertificateRequest: 0x0d,
     ServerHelloDone: 0x0e,
+    // CertificateVerify: 0x0f,
     ClientKeyExchange: 0x10,
     Finished: 0x14,
     properties: {
+        // 0x00: {name: "HelloRequest"},
         0x01: {name: "ClientHello"},
         0x02: {name: "ServerHello"},
         0x03: {name: "HelloVerifyRequest"},
+        // 0x0b: {name: "Certificate"},
+        // 0x0c: {name: "ServerKeyExchange"},
+        // 0x0d: {name: "CertificateRequest"},
         0x0e: {name: "ServerHelloDone"},
+        // 0x0f: {name: "CertificateVerify"},
         0x10: {name: "ClientKeyExchange"},
         0x14: {name: "Finished"},
     }
 });
 exports.isMessageTypeValid = function(messageType) {
-    return (this.MessageType.properties[messageType] !== undefined);
+    return (typeof this.MessageType.properties[messageType] !== "undefined");
 }
 
 
@@ -249,9 +135,10 @@ exports.AlertLevel = Object.freeze({
     }
 });
 exports.isAlertLevelValid = function(alertLevel) {
-    return (this.AlertLevel.properties[alertLevel] !== undefined);
+    return (typeof this.AlertLevel.properties[alertLevel] !== "undefined");
 }
 
+// NOTE: as we add/uncomment more AlertDescription members, we must also update the isAlertDescriptionAlwaysFatal function below (to be sync'd)
 exports.AlertDescription = Object.freeze({
     CloseNotify: 0,
     // UnexpectedMessage: 10,
@@ -271,7 +158,7 @@ exports.AlertDescription = Object.freeze({
     // AccessDenied: 49,
     // DecodeError: 50,
     // DecryptError: 51,
-    // ExportRestrictionRESERVED: 52,
+    // ExportRestrictionRESERVED: 60,
     // ProtocolVersion: 70,
     // InsufficientSecurity: 71,
     // InternalError: 80,
@@ -296,7 +183,7 @@ exports.AlertDescription = Object.freeze({
         // 49: {name: "AccessDenied"},
         // 50: {name: "DecodeError"},
         // 51: {name: "DecryptError"},
-        // 52: {name: "ExportRestrictionRESERVED"},
+        // 60: {name: "ExportRestrictionRESERVED"},
         // 70: {name: "ProtocolVersion"},
         // 71: {name: "InsufficientSecurity"},
         // 80: {name: "InternalError"},
@@ -305,9 +192,10 @@ exports.AlertDescription = Object.freeze({
     }
 });
 exports.isAlertDescriptionValid = function(alertDescription) {
-    return (this.AlertDescription.properties[alertDescription] !== undefined);
+    return (typeof this.AlertDescription.properties[alertDescription] !== "undefined");
 }
-exports.isAlertFatal = function(alertDescription) {
+// NOTE: this extra helper function helps our session object determine when an alert description should be considered fatal, regardless of the supplied "level".
+exports.isAlertDescriptionAlwaysFatal = function(alertDescription) {
     switch (alertDescription) {
         // case this.AlertDescription.UnexpectedMessage:
         case this.AlertDescription.BadRecordMac:

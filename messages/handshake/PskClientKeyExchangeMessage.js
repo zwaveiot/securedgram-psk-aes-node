@@ -14,72 +14,131 @@
 
 'use strict';
 
-/* ClientKeyExchange message layout:
- *      00: Identity Length (MSB)
- *      01: Identity Length (LSB)
- * .......: Identity
+ /* PskClientKeyExchange message layout:
+ *   00-01: identityLength (2 bytes, BE)
+ * .......: identity (0+ bytes)
  */
 
 let enums = require('../../enums.js');
+let SerializationHelper = require('../../helpers/SerializationHelper.js');
 
 // constants
+const MAX_IDENTITY_LENGTH = (1 << 16) - 1;
+//
+const MIN_LENGTH = 2;
 
 function PskClientKeyExchangeMessage() {
     this.identity = null;
 }
 
+/**
+ * Returns a new PskClientKeyExchangeMessage
+ * @param {Buffer} identity - Identity
+ */
 exports.create = function(identity) {
     // validate inputs
     //
     // identity
-    if (typeof identity === "undefined") {
+    if (Buffer.isBuffer(identity) === false) {
+        // identity must be a Buffer (zero-length is permissable, whereas null is not)
+        // NOTE: per RFC 4279, identities must be provided (and indeed a "zero-length PSK" could not be distinguished from a "missing" identity by some PSK ciphersuites)
         throw new TypeError();
-    } else if (identity === null) {
-        // null identity (i.e. no identity) is acceptable
-        // NOTE: after a search of TLS, DTLS and PSK RFCs, no rules could be located which require a non-empty identity value
-    } else if (Object.prototype.toString.call(identity) != "[object Uint8Array]") {
-        throw new TypeError();
+    } else if (identity.length > MAX_IDENTITY_LENGTH) {
+        // identity length may not exceed the maximum length allowed by RFC 4279
+        throw new RangeError();
     }
 
     // create and initialize the new PskClientKeyExchangeMessage object
     let result = new PskClientKeyExchangeMessage();
-    result.identity = identity;
+    // identity
+    result.identity = Buffer.alloc(identity.length);
+    identity.copy(result.identity);
 
     // return the new PskClientKeyExchangeMessage object
     return result;
 }
 
+/**
+ * Parses the PskClientKeyExchange message contained in the input Buffer; returns a tuple containing the parsed message ('message') as a PskClientKeyExchangeMessage and the bytes consumed ('bytesConsumed') as a whole number.
+ * @param {Buffer} buffer - The input buffer containing the PskClientKeyExchange message
+ * @param {number} offset=0 - The byte-offset within the buffer at which to start parsing
+ */
+// NOTE: this function returns null if a complete message could not be parsed (and does not validate any data in the returned message)
+// NOTE: offset is optional (default: 0)
+exports.fromBuffer = function(buffer, offset) {
+    /** BEGINNING OF STANDARD fromBuffer(...) HEADER - DO NOT MODIFY */
+    //
+    // validate input arguments (returns true on success; returns false if buffer is not long enough; throws an error if arguments are programatically invalid)
+    if (SerializationHelper.ValidateDeserializationArguments(buffer, offset, MIN_LENGTH) === false) return null;
+    //
+    // set our initialOffset to the passed-in offset (or to 0 if the passed-in offset argument is undefined)
+    let initialOffset;
+    if (typeof offset === 'undefined') { 
+        initialOffset = 0; // default offset value
+    } else { 
+        initialOffset = offset; 
+    }
+    // set our currentOffset equal to our initialOffset (so we start parsing at the specified start offset).
+    let currentOffset = initialOffset;
+    //
+    /** END OF STANDARD fromBuffer(...) HEADER - DO NOT MODIFY */
+            
+    // create the new PskClientKeyExchangeMessage object
+    let result = new PskClientKeyExchangeMessage();
+
+    // parse buffer
+    //
+    // identityLength
+    let identityLength = buffer.readUInt16BE(currentOffset);
+    currentOffset += 2;
+    // identity (if identityLength > 0)
+    if (buffer.length - currentOffset < identityLength) {
+        // if the buffer is not big enough, return null
+        return null;        
+    }
+    result.identity = Buffer.alloc(identityLength);
+    buffer.copy(result.identity, 0, currentOffset, currentOffset + identityLength);
+    currentOffset += identityLength;
+
+    // return the new PskClientKeyExchangeMessage object
+    return {message: result, bytesConsumed: currentOffset - initialOffset};
+}
+
+/**
+  * Returns a Buffer consisting of the PskClientKeyExchangeMessage
+ */
 PskClientKeyExchangeMessage.prototype.toBuffer = function() {
+    // validate the object instance's fields
+    //
+    // identity
+    if (Buffer.isBuffer(this.identity) === false) {
+        // identity must be a Buffer (zero-length is permissable, whereas null is not)
+        // NOTE: per RFC 4279, identities must be provided (and indeed a "zero-length PSK" could not be distinguished from a "missing" identity by some PSK ciphersuites)
+        throw new TypeError();
+    } else if (this.identity.length > MAX_IDENTITY_LENGTH) {
+        // identity length may not exceed the maximum length allowed by RFC 4279
+        throw new RangeError();
+    }
+
     // calculate the length of our buffer
     let bufferLength = 0;
-    bufferLength += 2; // Identity Length
-    // identity is optional and will be null if none exists
-    if (this.identity != null)
-    {
-        bufferLength += this.identity.length;
-    }
+    bufferLength += 2; // identityLength
+    bufferLength += this.identity.length;
     
     // create our buffer (which we will then populate)
     let result = Buffer.alloc(bufferLength);
-    // use offset to track the current offset while writing to the buffer    
-    let offset = 0;
+    // use currentOffset to track the current offset while writing to the buffer    
+    let currentOffset = 0;
 
-    // populate message header
+    // populate the result buffer
     //
-    // identity length and identity
-    if (this.identity == null)
-    {
-        result.writeUInt16BE(0, offset);
-        offset += 2;
-    }
-    else
-    {
-        let identityAsBuffer = new Buffer(this.identity);
-        result.writeUInt16BE(identityAsBuffer.length, offset);
-        offset += 2;
-        identityAsBuffer.copy(result, offset, 0, identityAsBuffer.length);
-        offset += identityAsBuffer.length;
-    }
+    // identityLength
+    let identityLength = this.identity.length;
+    result.writeUInt16BE(identityLength, currentOffset);
+    currentOffset += 2;
+    // identity
+    this.identity.copy(result, currentOffset);
+    currentOffset += identityLength;
 
     // return the buffer (result)
     return result;
